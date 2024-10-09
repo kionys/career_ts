@@ -88,12 +88,12 @@ export const LoginPage = () => {
 
   return (
     <Layout authStatus={authStatusType.NEED_NOT_LOGIN}>
-      <div className="w-full h-screen max-w-md mx-auto space-y-8 flex flex-col justify-center">
+      <div className="flex flex-col justify-center w-full h-screen max-w-md mx-auto space-y-8">
         <form onSubmit={handleClickLoginButton} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">이메일</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Mail className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
               <Input
                 id="email"
                 type="email"
@@ -109,7 +109,7 @@ export const LoginPage = () => {
           <div className="space-y-2">
             <Label htmlFor="password">비밀번호</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Lock className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
               <Input
                 id="password"
                 type="password"
