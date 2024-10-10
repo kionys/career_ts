@@ -2,9 +2,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { MAX_CART_VALUE } from '@/constants';
+import { useCart } from '@/core/hooks/use-carts';
 import { cartValidationMessages } from '@/messages';
-import { changeCartItemCount, removeCartItem } from '@/store/cart/cartSlice';
-import { useAppDispatch } from '@/store/hooks';
 import { IUser } from '@/types/authType';
 import { CartItem } from '@/types/cartType';
 import { formatPrice } from '@/utils/formatter';
@@ -19,15 +18,17 @@ export const ProductInfoTableRow = ({
   item,
   user,
 }: ProductInfoTableRowProps) => {
-  const dispatch = useAppDispatch();
   const { id, title, count, image, price } = item;
+  const { removeCartItem, changeCartItemCount } = useCart();
 
+  // 장바구니 아이템 삭제
   const handleClickDeleteItem = () => {
     if (user) {
-      dispatch(removeCartItem({ itemId: id, userId: user.uid }));
+      removeCartItem({ itemId: id, userId: user.uid });
     }
   };
 
+  // 장바구니 아이템의 카운트 추가
   const handleChangeCount = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const newCount = Number(e.target.value);
 
@@ -37,9 +38,7 @@ export const ProductInfoTableRow = ({
     }
 
     if (user) {
-      dispatch(
-        changeCartItemCount({ itemId: id, userId: user.uid, count: newCount })
-      );
+      changeCartItemCount({ itemId: id, count: newCount, userId: user.uid });
     }
   };
 
@@ -60,7 +59,7 @@ export const ProductInfoTableRow = ({
       <TableCell>{formatPrice(price * count)}</TableCell>
       <TableCell>
         <Button variant="ghost" size="icon" onClick={handleClickDeleteItem}>
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="w-4 h-4" />
         </Button>
       </TableCell>
     </TableRow>

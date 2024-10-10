@@ -5,12 +5,11 @@ import { Lock, Mail, User } from 'lucide-react';
 import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { registerUserAPI } from '@/api/auth';
 import { pageRoutes } from '@/apiRoutes';
 import { EMAIL_PATTERN } from '@/constants';
+import { useToast } from '@/core/hooks/use-toast';
 import { Layout, authStatusType } from '@/pages/common/components/Layout';
-import { RootState } from '@/store';
-import { registerUser } from '@/store/auth/authActions';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 interface FormErrors {
   name?: string;
@@ -18,19 +17,21 @@ interface FormErrors {
   password?: string;
 }
 
+type IStateRegisterStatus = 'succeeded' | 'error' | 'loading' | null;
+
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const { registerStatus, registerError } = useAppSelector(
-    (state: RootState) => state.auth
-  );
+  const { addToast } = useToast();
 
   const [name, setName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [errors, setErrors] = useState<FormErrors>({});
+  const [registerStatus, setRegisterStatus] =
+    useState<IStateRegisterStatus>(null);
 
   useEffect(() => {
+    // 회원가입 완료되면 로그인 페이지로 리다이렉트
     if (registerStatus === 'succeeded') {
       navigate(pageRoutes.login);
     }
@@ -49,18 +50,21 @@ export const RegisterPage: React.FC = () => {
     return Object.keys(formErrors).length === 0;
   };
 
+  // 회원가입 시작
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // 유효성 검사
     if (validateForm()) {
+      setRegisterStatus('loading');
+
       try {
-        await dispatch(registerUser({ email, password, name })).unwrap();
-        console.log('가입 성공!');
-        navigate(pageRoutes.login);
+        await registerUserAPI({ email, password, name });
+        addToast('회원가입이 완료되었습니다.', 'success');
+        setRegisterStatus('succeeded');
       } catch (error) {
-        console.error(
-          '회원가입 중 오류가 발생했습니다. 다시 시도해 주세요.',
-          error
-        );
+        setRegisterStatus('error');
+        addToast('회원가입 중 오류가 발생했습니다.', 'error');
       }
     }
   };
@@ -82,12 +86,12 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <Layout authStatus={authStatusType.NEED_NOT_LOGIN}>
-      <div className="w-full h-screen max-w-md mx-auto space-y-8 flex flex-col justify-center">
+      <div className="flex flex-col justify-center w-full h-screen max-w-md mx-auto space-y-8">
         <form onSubmit={handleRegister} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">이름</Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <User className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
               <Input
                 id="name"
                 type="text"
@@ -103,7 +107,7 @@ export const RegisterPage: React.FC = () => {
           <div className="space-y-2">
             <Label htmlFor="email">이메일</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Mail className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
               <Input
                 id="email"
                 type="email"
@@ -119,7 +123,7 @@ export const RegisterPage: React.FC = () => {
           <div className="space-y-2">
             <Label htmlFor="password">비밀번호</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Lock className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
               <Input
                 id="password"
                 type="password"
@@ -139,8 +143,8 @@ export const RegisterPage: React.FC = () => {
           >
             {registerStatus === 'loading' ? '가입 중...' : '회원가입'}
           </Button>
-          {registerError && (
-            <p className="text-sm text-red-500">{registerError}</p>
+          {registerStatus === 'error' && (
+            <p className="text-sm text-red-500">회원가입 오류</p>
           )}
         </form>
       </div>

@@ -9,10 +9,10 @@ import { useNavigate } from 'react-router-dom';
 
 import { pageRoutes } from '@/apiRoutes';
 import { EMAIL_PATTERN } from '@/constants';
+import { useCache } from '@/core/hooks/use-cache';
+import { useToast } from '@/core/hooks/use-toast';
 import { auth } from '@/firebase';
 import { Layout, authStatusType } from '@/pages/common/components/Layout';
-import { setIsLogin, setUser } from '@/store/auth/authSlice';
-import { useAppDispatch } from '@/store/hooks';
 
 interface FormErrors {
   email?: string;
@@ -22,8 +22,8 @@ interface FormErrors {
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-
+  const { setUser } = useCache();
+  const { addToast } = useToast();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [errors, setErrors] = useState<FormErrors>({});
@@ -62,22 +62,21 @@ export const LoginPage = () => {
 
         Cookies.set('accessToken', token, { expires: 7 });
 
-        dispatch(setIsLogin(true));
+        // TODO 로그인
         if (user) {
-          dispatch(
-            setUser({
-              uid: user.uid,
-              email: user.email ?? '',
-              displayName: user.displayName ?? '',
-            })
-          );
+          setUser({
+            uid: user.uid,
+            email: user.email ?? '',
+            displayName: user.displayName ?? '',
+          });
+          addToast('로그인에 성공하였습니다.', 'success');
         }
 
         navigate(pageRoutes.main);
       } catch (error) {
-        console.error(
+        addToast(
           '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.',
-          error
+          'error'
         );
         setErrors({
           form: '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.',

@@ -9,18 +9,17 @@ import {
 } from '@/components/ui/table';
 import { ShoppingCart } from 'lucide-react';
 
-import { selectCart } from '@/store/cart/cartSelectors';
-import { useAppSelector } from '@/store/hooks';
+import { useCart } from '@/core/hooks/use-carts';
 import { formatPrice } from '@/utils/formatter';
 
 export const ItemList = () => {
-  const cart = useAppSelector(selectCart);
+  const { cart } = useCart();
 
   return (
     <Card className="mt-6">
       <CardHeader>
         <CardTitle className="flex items-center">
-          <ShoppingCart className="mr-2 h-6 w-6" />
+          <ShoppingCart className="w-6 h-6 mr-2" />
           구매 물품
         </CardTitle>
       </CardHeader>
@@ -34,7 +33,7 @@ export const ItemList = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Object.values(cart).map(({ id, title, count, price }) => (
+            {Object.values(cart.cart).map(({ id, title, count, price }) => (
               <TableRow key={id}>
                 <TableCell>{title}</TableCell>
                 <TableCell>{count}개</TableCell>

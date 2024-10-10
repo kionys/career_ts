@@ -2,15 +2,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
 
+import { useFilter } from '@/core/hooks/use-filter';
 import { ApiErrorBoundary } from '@/pages/common/components/ApiErrorBoundary';
-import {
-  setCategoryId,
-  setMaxPrice,
-  setMinPrice,
-  setTitle,
-} from '@/store/filter/filterActions';
-import { selectFilter } from '@/store/filter/filterSelectors';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { debounce } from '@/utils/common';
 import { CategoryRadioGroup } from './CategoryRadioGroup';
 import { PriceRange } from './PriceRange';
@@ -27,42 +20,23 @@ const ProductFilterBox: React.FC<ProductFilterBoxProps> = ({ children }) => (
 );
 
 export const ProductFilter = () => {
-  const dispatch = useAppDispatch();
-  const filterState = useAppSelector(selectFilter);
+  const { filter, setFilter } = useFilter();
 
+  // 상품명 검색
   const handleChangeInput = debounce(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      dispatch(setTitle(e.target.value));
+      setFilter({
+        ...filter,
+        title: e.target.value,
+      });
     },
     300
   );
 
-  const handlePriceChange = (
-    actionCreator: typeof setMinPrice | typeof setMaxPrice
-  ) =>
-    debounce((e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      if (value === '') {
-        dispatch(actionCreator(-1));
-      } else {
-        const numericValue = Math.max(0, parseInt(value, 10));
-        if (!isNaN(numericValue)) {
-          dispatch(actionCreator(numericValue));
-        }
-      }
-    }, 300);
-
-  const handleMinPrice = handlePriceChange(setMinPrice);
-  const handleMaxPrice = handlePriceChange(setMaxPrice);
-
+  // 상품 카테고리 변경
   const handleChangeCategory = (value: string) => {
-    if (value !== undefined) {
-      dispatch(setCategoryId(value));
-    } else {
-      console.error('카테고리가 설정되지 않았습니다.');
-    }
+    setFilter({ categoryId: value });
   };
-
   return (
     <div className="space-y-4">
       <ProductFilterBox>
@@ -70,19 +44,16 @@ export const ProductFilter = () => {
       </ProductFilterBox>
       <ProductFilterBox>
         <ApiErrorBoundary>
-          <Suspense fallback={<Loader2 className="h-24 w-24 animate-spin" />}>
+          <Suspense fallback={<Loader2 className="w-24 h-24 animate-spin" />}>
             <CategoryRadioGroup
-              categoryId={filterState.categoryId}
+              categoryId={filter.categoryId}
               onChangeCategory={handleChangeCategory}
             />
           </Suspense>
         </ApiErrorBoundary>
       </ProductFilterBox>
       <ProductFilterBox>
-        <PriceRange
-          onChangeMinPrice={handleMinPrice}
-          onChangeMaxPrice={handleMaxPrice}
-        />
+        <PriceRange />
       </ProductFilterBox>
     </div>
   );

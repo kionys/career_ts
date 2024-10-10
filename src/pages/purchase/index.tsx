@@ -1,27 +1,21 @@
-import { Loader2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-import { makePurchase } from '@/api/purchase';
 import { pageRoutes } from '@/apiRoutes';
 
+import { makePurchase } from '@/api/purchase';
 import { PHONE_PATTERN } from '@/constants';
+import { useCache } from '@/core/hooks/use-cache';
+import { useCart } from '@/core/hooks/use-carts';
+import { useToast } from '@/core/hooks/use-toast';
 import { Layout, authStatusType } from '@/pages/common/components/Layout';
 import { ItemList } from '@/pages/purchase/components/ItemList';
 import { Payment } from '@/pages/purchase/components/Payment';
 import { ShippingInformationForm } from '@/pages/purchase/components/ShippingInformationForm';
-import { selectUser } from '@/store/auth/authSelectors';
-import { selectCart } from '@/store/cart/cartSelectors';
-import { resetCart } from '@/store/cart/cartSlice';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  purchaseFailure,
-  purchaseStart,
-  purchaseSuccess,
-} from '@/store/purchase/purchaseSlice';
+import { Loader2 } from 'lucide-react';
 
 export interface FormData {
   name: string;
@@ -36,11 +30,13 @@ export interface FormErrors {
 }
 
 export const Purchase: React.FC = () => {
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const user = useAppSelector(selectUser);
-  const cart = useAppSelector(selectCart);
-  const { isLoading } = useAppSelector((state) => state.purchase);
+  const { user } = useCache();
+  const { cart, resetCart } = useCart();
+  const { addToast } = useToast();
+
+  // 구매하기 로딩 상태
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<FormData>({
     name: user?.displayName ?? '',
@@ -50,18 +46,22 @@ export const Purchase: React.FC = () => {
     payment: 'accountTransfer',
   });
 
+  // 휴대폰 번호 에러 state
   const [errors, setErrors] = useState<FormErrors>({
     phone: '',
   });
 
+  // 주소 및 휴대폰 번호 유효성 검사 state
   const [isFormValid, setIsFormValid] = useState<boolean>(false);
 
+  // 주소 및 휴대폰 번호 유효성 검사
   useEffect(() => {
     const { address, phone } = formData;
     const isPhoneValid = PHONE_PATTERN.test(phone);
     setIsFormValid(address.trim() !== '' && isPhoneValid);
   }, [formData]);
 
+  // 주소 및 휴대폰 번호 변경
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -80,11 +80,14 @@ export const Purchase: React.FC = () => {
     }
   };
 
+  // 구매하기 버튼 클릭
   const handleClickPurchase = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isFormValid || !user) return;
 
-    dispatch(purchaseStart());
+    // 로딩 시작
+    setIsLoading(true);
+
     const purchaseData = {
       ...formData,
       totalAmount: 0,
@@ -93,22 +96,39 @@ export const Purchase: React.FC = () => {
     };
 
     try {
-      await makePurchase(purchaseData, user.uid, cart);
-      dispatch(purchaseSuccess());
+      // 구매하기 API
+      await makePurchase(purchaseData, user.uid, cart.cart);
+
+      // 로딩 끝
+      setIsLoading(false);
+
+      // 성공 토스트
+      addToast('구매 성공!', 'success');
+
       if (user) {
-        dispatch(resetCart(user.uid));
+        // 장바구니 비우기(초기화)
+        resetCart(user.uid);
       }
-      console.log('구매 성공!');
+
       navigate(pageRoutes.main);
     } catch (err) {
+      // 로딩 끝
+      setIsLoading(false);
+
+      // 실패 토스트
+      addToast('구매 실패!', 'error');
+
+      // 에러 처리
       if (err instanceof Error) {
-        dispatch(purchaseFailure(err.message));
+        // 에러 토스트
+        addToast(err.message, 'error');
         console.error(
           '잠시 문제가 발생했습니다! 다시 시도해 주세요.',
           err.message
         );
       } else {
-        dispatch(purchaseFailure('알 수 없는 오류가 발생했습니다.'));
+        // 알 수 없는 오류 토스트
+        addToast('알 수 없는 오류가 발생했습니다.', 'error');
         console.error('잠시 문제가 발생했습니다! 다시 시도해 주세요.');
       }
     }
@@ -140,7 +160,7 @@ export const Purchase: React.FC = () => {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     처리 중...
                   </>
                 ) : (

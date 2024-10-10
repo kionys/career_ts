@@ -5,17 +5,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useCache } from '@/core/hooks/use-cache';
+import { useCart } from '@/core/hooks/use-carts';
 import { ProductInfoTableRow } from '@/pages/cart/components/ProductInfoTableRow';
-import { selectUser } from '@/store/auth/authSelectors';
-import { selectCart } from '@/store/cart/cartSelectors';
-import { useAppSelector } from '@/store/hooks';
-import { IUser } from '@/types/authType';
-import { CartItem } from '@/types/cartType';
 
 export const ProductInfoTable = () => {
-  const cart: CartItem[] = useAppSelector(selectCart);
-  const user: IUser | null = useAppSelector(selectUser);
-
+  const { user } = useCache();
+  const { cart } = useCart();
   return (
     <Table>
       <TableHeader>
@@ -28,8 +24,8 @@ export const ProductInfoTable = () => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {cart.map((item) => (
-          <ProductInfoTableRow key={item.id} item={item} user={user} />
+        {cart.cart.map((item) => (
+          <ProductInfoTableRow key={item.id} item={item} user={user!} />
         ))}
       </TableBody>
     </Table>

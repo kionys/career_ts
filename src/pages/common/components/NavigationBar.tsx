@@ -1,15 +1,16 @@
 import Cookies from 'js-cookie';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { pageRoutes } from '@/apiRoutes';
 import { ApiErrorBoundary } from '@/pages/common/components/ApiErrorBoundary';
-import { logout } from '@/store/auth/authSlice';
-import { initCart } from '@/store/cart/cartSlice';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCache } from '@/core/hooks/use-cache';
+import { useCart } from '@/core/hooks/use-carts';
+import { app } from '@/firebase';
 import { useModal } from '@/hooks/useModal';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { getAuth, signOut } from 'firebase/auth';
 import { CartButton } from './CartButton';
 import { ConfirmModal } from './ConfirmModal';
 import { LoginButton } from './LoginButton';
@@ -17,52 +18,70 @@ import { LogoutButton } from './LogoutButton';
 
 export const NavigationBar = () => {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
+  const [mount, setMount] = useState<boolean>(false);
   const { isOpen, openModal, closeModal } = useModal();
-  const { isLogin, user } = useAppSelector((state) => state.auth);
-  const { cart } = useAppSelector((state) => state.cart);
+  const { user, setUser } = useCache();
+  const { cart, initCart } = useCart();
 
   useEffect(() => {
-    if (isLogin && user && cart.length === 0) {
-      dispatch(initCart(user.uid));
-    }
-  }, [isLogin, user, dispatch, cart.length]);
+    setMount(true);
+  }, []);
 
+  // console.log(cart);
+
+  // 회원의 장바구니 가져오기
+  useEffect(() => {
+    if (user && cart.cart.length === 0) {
+      initCart(user.uid);
+    }
+  }, [user, cart.cart.length]);
+
+  // 로그아웃 모달 열기
   const handleLogout = () => {
     openModal();
   };
 
-  const handleConfirmLogout = () => {
-    dispatch(logout());
+  // 로그아웃
+  const handleConfirmLogout = async () => {
+    const auth = getAuth(app);
+
+    await signOut(auth).then(() => {
+      console.log('로그아웃 성공');
+    });
+    setUser(null);
     Cookies.remove('accessToken');
     closeModal();
+    navigate('/login');
   };
 
+  // Go Home
   const handleClickLogo = () => {
     navigate(pageRoutes.main);
   };
-
   return (
     <>
-      <nav className="fixed top-0 w-full bg-white shadow-md z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
+      <nav className="fixed top-0 z-50 w-full bg-white shadow-md">
+        <div className="container px-4 mx-auto">
+          <div className="flex items-center justify-between h-16">
             <h1
               className="text-xl font-bold cursor-pointer"
               onClick={handleClickLogo}
             >
               스파르타 마트
             </h1>
+
             <div className="flex items-center space-x-4">
-              {isLogin ? (
+              {!user ? (
+                <Suspense fallback={<Skeleton className="w-24 h-8" />}>
+                  <LoginButton />
+                </Suspense>
+              ) : (
                 <ApiErrorBoundary>
                   <Suspense fallback={<Skeleton className="w-24 h-8" />}>
-                    <CartButton cart={cart} />
+                    <CartButton cart={cart.cart} />
                     <LogoutButton onClick={handleLogout} />
                   </Suspense>
                 </ApiErrorBoundary>
-              ) : (
-                <LoginButton />
               )}
             </div>
           </div>
