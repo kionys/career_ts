@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { pageRoutes } from '@/apiRoutes';
-import { useAppSelector } from '@/store/hooks';
+import ToastContainer from '@/components/ui/toast';
+import { useCache } from '@/core/hooks/use-cache';
 import { NavigationBar } from './NavigationBar';
 
 export const authStatusType = {
@@ -22,18 +23,20 @@ export const Layout: React.FC<LayoutProps> = ({
   containerClassName = '',
   authStatus = authStatusType.COMMON,
 }) => {
-  const { isLogin } = useAppSelector((state) => state.auth);
+  const { user } = useCache();
+  // const { isLogin } = useAppSelector((state) => state.auth);
 
-  if (authStatus === authStatusType.NEED_LOGIN && !isLogin) {
+  if (authStatus === authStatusType.NEED_LOGIN && !user) {
     return <Navigate to={pageRoutes.login} />;
   }
 
-  if (authStatus === authStatusType.NEED_NOT_LOGIN && isLogin) {
+  if (authStatus === authStatusType.NEED_NOT_LOGIN && user) {
     return <Navigate to={pageRoutes.main} />;
   }
 
   return (
     <div>
+      <ToastContainer />
       <NavigationBar />
       <div className="flex flex-col min-h-screen mt-24">
         <main className="flex-grow">
