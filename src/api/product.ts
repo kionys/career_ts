@@ -13,9 +13,9 @@ import {
   where,
 } from 'firebase/firestore';
 import {
+  IProduct,
   NewProductDTO,
   PaginatedProductsDTO,
-  IProduct,
 } from './dtos/productDTO';
 
 export const fetchProducts = async (
@@ -72,7 +72,12 @@ export const fetchProducts = async (
 
     const hasNextPage = endIndex < totalCount;
 
-    return { products: paginatedProducts, hasNextPage, totalCount };
+    return {
+      products: paginatedProducts,
+      hasNextPage,
+      currentPage: page, // TODO 홈에서 상품리스트를 더보기로 패칭하기 위한 페이지 리턴값 추가
+      totalCount,
+    };
   } catch (error) {
     console.error('Error fetching products: ', error);
     throw error;
