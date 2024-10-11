@@ -70,9 +70,8 @@ export const LoginPage = () => {
             displayName: user.displayName ?? '',
           });
           addToast('로그인에 성공하였습니다.', 'success');
+          navigate(pageRoutes.main);
         }
-
-        navigate(pageRoutes.main);
       } catch (error) {
         addToast(
           '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.',

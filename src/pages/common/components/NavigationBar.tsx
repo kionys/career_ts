@@ -1,5 +1,5 @@
 import Cookies from 'js-cookie';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { pageRoutes } from '@/apiRoutes';
@@ -8,6 +8,7 @@ import { ApiErrorBoundary } from '@/pages/common/components/ApiErrorBoundary';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCache } from '@/core/hooks/use-cache';
 import { useCart } from '@/core/hooks/use-carts';
+import { useToast } from '@/core/hooks/use-toast';
 import { app } from '@/firebase';
 import { useModal } from '@/hooks/useModal';
 import { getAuth, signOut } from 'firebase/auth';
@@ -18,16 +19,10 @@ import { LogoutButton } from './LogoutButton';
 
 export const NavigationBar = () => {
   const navigate = useNavigate();
-  const [mount, setMount] = useState<boolean>(false);
   const { isOpen, openModal, closeModal } = useModal();
   const { user, setUser } = useCache();
   const { cart, initCart } = useCart();
-
-  useEffect(() => {
-    setMount(true);
-  }, []);
-
-  // console.log(cart);
+  const { addToast } = useToast();
 
   // 회원의 장바구니 가져오기
   useEffect(() => {
@@ -46,12 +41,12 @@ export const NavigationBar = () => {
     const auth = getAuth(app);
 
     await signOut(auth).then(() => {
-      console.log('로그아웃 성공');
+      setUser(null);
+      Cookies.remove('accessToken');
+      addToast('로그아웃 되었습니다.', 'success');
+      closeModal();
+      navigate('/login');
     });
-    setUser(null);
-    Cookies.remove('accessToken');
-    closeModal();
-    navigate('/login');
   };
 
   // Go Home
@@ -72,9 +67,11 @@ export const NavigationBar = () => {
 
             <div className="flex items-center space-x-4">
               {!user ? (
-                <Suspense fallback={<Skeleton className="w-24 h-8" />}>
-                  <LoginButton />
-                </Suspense>
+                <ApiErrorBoundary>
+                  <Suspense fallback={<Skeleton className="w-24 h-8" />}>
+                    <LoginButton />
+                  </Suspense>
+                </ApiErrorBoundary>
               ) : (
                 <ApiErrorBoundary>
                   <Suspense fallback={<Skeleton className="w-24 h-8" />}>
